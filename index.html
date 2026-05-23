@@ -30,7 +30,8 @@ html,body{font-family:'Noto Sans JP',sans-serif;font-weight:300;background:var(-
 .drop-zone small{font-size:10px;color:var(--f);display:block;margin-top:.3rem}
 .upload-note{font-size:11px;color:var(--f);margin-top:1.2rem;line-height:1.7}
 #form-screen{display:none}
-.form-header{background:var(--w);border-bottom:.5px solid var(--b);padding:.85rem 1.75rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:10px;flex-wrap:wrap;position:relative}
+.sticky-wrap{position:sticky;top:0;z-index:200;background:var(--w)}
+.form-header{background:var(--w);border-bottom:.5px solid var(--b);padding:.85rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .form-header-title{font-family:'Noto Sans JP',sans-serif;font-size:19px;font-weight:500;color:var(--a);position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap}
 .hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn{font-family:'Noto Sans JP',sans-serif;font-size:10px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;border-radius:var(--r);padding:6px 14px;cursor:pointer;transition:all .2s;border:none}
@@ -39,7 +40,7 @@ html,body{font-family:'Noto Sans JP',sans-serif;font-weight:300;background:var(-
 .btn-accent{background:var(--a);color:var(--w)}
 .btn-accent:hover{opacity:.85}
 .autosave-badge{font-size:10px;color:var(--f);display:none}
-.tab-bar{background:var(--c);padding:1.25rem 1rem;position:sticky;top:52px;z-index:190;border-bottom:.5px solid var(--b)}
+.tab-bar{background:var(--c);padding:.4rem 1rem;border-bottom:.5px solid var(--b)}
 .tab-nav{display:flex;justify-content:center;align-items:center;gap:1.5rem;flex-wrap:wrap}
 .tab-btn{
   font-family:'Noto Sans JP',sans-serif;font-size:.72rem;font-weight:400;
@@ -110,17 +111,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .excl-note{font-size:11px;color:var(--er);background:var(--erl);border-radius:var(--r);padding:6px 10px;margin-top:4px;line-height:1.5}
 .crop-thumb{width:44px;height:44px;object-fit:cover;border-radius:4px;border:.5px solid var(--b);flex-shrink:0}
 .block-grp{border:.5px solid var(--b);border-radius:var(--rl);overflow:hidden;margin-bottom:.5rem}
-.block-item{background:var(--w);border-bottom:.5px solid var(--b);padding:1rem 1rem 1rem 2.75rem;position:relative}
+.block-item{background:var(--w);border-bottom:.5px solid var(--b);padding:1rem;position:relative}
 .block-item:last-of-type{border-bottom:none}
-.block-item.dragging{opacity:.45}
-.block-item.drag-over-top{border-top:2px solid var(--a)}
-.block-item.drag-over-bot{border-bottom:2px solid var(--a)}
-.drag-handle{position:absolute;left:0;top:0;bottom:0;width:2.5rem;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--f);font-size:13px;background:var(--c);border-right:.5px solid var(--b);user-select:none;z-index:1}
-.drag-handle:active{cursor:grabbing}
+.drag-handle{display:none}
 .block-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
 .block-num{font-family:'Noto Sans JP',sans-serif;font-size:16px;font-style:normal;font-weight:500;color:var(--a)}
 .block-del{background:none;border:.5px solid var(--b);border-radius:var(--r);padding:2px 10px;font-size:10px;cursor:pointer;color:var(--f);font-family:'Noto Sans JP',sans-serif;transition:all .2s}
 .block-del:hover{border-color:var(--er);color:var(--er)}
+.block-move{background:none;border:.5px solid var(--b);border-radius:var(--r);padding:2px 8px;font-size:11px;cursor:pointer;color:var(--f);font-family:'Noto Sans JP',sans-serif;transition:all .2s;line-height:1}
+.block-move:hover{border-color:var(--a);color:var(--a)}
+.block-move:disabled{opacity:.25;cursor:default;pointer-events:none}
 .block-add{width:100%;padding:10px;background:var(--c);border:none;border-top:.5px solid var(--b);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--a);cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:5px}
 .block-add:hover{background:var(--al)}
 .block-add:disabled{opacity:.35;cursor:default;pointer-events:none}
@@ -205,6 +205,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <!-- Form -->
 <div id="form-screen">
+  <div class="sticky-wrap">
   <div class="form-header">
     <div class="form-header-title" id="form-title">Wedding Film — 入稿フォーム</div>
     <div class="hdr-right">
@@ -219,6 +220,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <button class="tab-btn tab-btn-submit" id="tab-submit-btn" onclick="validateAndConfirm()" style="display:none;flex-shrink:0">確認画面</button>
   </div>
 </div>
+  </div>
   <div class="form-body" id="form-body"></div>
 </div>
 
@@ -734,13 +736,18 @@ function renderBlock(parent, rows, cfg, subHdr) {
   function makeItem(idx) {
     _blkCnt++;
     const bId = 'b' + _blkCnt;
-    const item = document.createElement('div'); item.className = 'block-item'; item.setAttribute('draggable', 'true');
-    const hdl = document.createElement('div'); hdl.className = 'drag-handle'; hdl.textContent = '⠿'; item.appendChild(hdl);
+    const item = document.createElement('div'); item.className = 'block-item';
     const hdr = document.createElement('div'); hdr.className = 'block-hdr';
     const num = document.createElement('span'); num.className = 'block-num'; num.textContent = (idx+1) + '枚目'; hdr.appendChild(num);
+    const btnWrap = document.createElement('div'); btnWrap.style.cssText = 'display:flex;gap:4px;align-items:center';
+    const upBtn = document.createElement('button'); upBtn.className = 'block-move'; upBtn.textContent = '▲'; upBtn.type = 'button';
+    upBtn.onclick = () => { const prev = item.previousElementSibling; if(prev&&prev.classList.contains('block-item')){grp.insertBefore(item,prev);renumber(grp,cfg,subHdr);updateAdd(addBtn,grp,cfg,subHdr);} };
+    const downBtn = document.createElement('button'); downBtn.className = 'block-move'; downBtn.textContent = '▼'; downBtn.type = 'button';
+    downBtn.onclick = () => { const next = item.nextElementSibling; if(next&&next.classList.contains('block-item')){grp.insertBefore(next,item);renumber(grp,cfg,subHdr);updateAdd(addBtn,grp,cfg,subHdr);} };
     const del = document.createElement('button'); del.className = 'block-del'; del.textContent = '削除'; del.type = 'button';
     del.onclick = () => { item.remove(); renumber(grp, cfg, subHdr); updateAdd(addBtn, grp, cfg, subHdr); };
-    hdr.appendChild(del); item.appendChild(hdr);
+    btnWrap.appendChild(upBtn); btnWrap.appendChild(downBtn); btnWrap.appendChild(del);
+    hdr.appendChild(btnWrap); item.appendChild(hdr);
     let fIdx = 0;
     rows.forEach(fr => {
       const cloned = Object.assign({}, fr, { fi: null, _id: bId + '_f' + (fIdx++) });
@@ -748,11 +755,6 @@ function renderBlock(parent, rows, cfg, subHdr) {
       item.appendChild(field);
     });
     // drag
-    item.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed='move'; item.classList.add('dragging'); grp._drag = item; });
-    item.addEventListener('dragend', () => { item.classList.remove('dragging'); grp.querySelectorAll('.block-item').forEach(it => it.classList.remove('drag-over-top','drag-over-bot')); grp._drag = null; renumber(grp, cfg); });
-    item.addEventListener('dragover', e => { e.preventDefault(); if (!grp._drag || grp._drag===item) return; const mid = item.getBoundingClientRect().top + item.getBoundingClientRect().height/2; item.classList.toggle('drag-over-top', e.clientY < mid); item.classList.toggle('drag-over-bot', e.clientY >= mid); });
-    item.addEventListener('dragleave', () => item.classList.remove('drag-over-top','drag-over-bot'));
-    item.addEventListener('drop', e => { e.preventDefault(); if (!grp._drag||grp._drag===item) return; const mid = item.getBoundingClientRect().top + item.getBoundingClientRect().height/2; e.clientY < mid ? grp.insertBefore(grp._drag, item) : item.after(grp._drag); item.classList.remove('drag-over-top','drag-over-bot'); });
     return item;
   }
 
@@ -770,6 +772,9 @@ function renumber(grp, cfg, subHdr) {
   items.forEach((item, i) => {
     const n = item.querySelector('.block-num'); if (n) n.textContent = (i+1) + '枚目';
     const d = item.querySelector('.block-del'); if (d) d.style.display = items.length > cfg.min ? '' : 'none';
+    const btns = item.querySelectorAll('.block-move');
+    if (btns[0]) btns[0].disabled = i === 0;
+    if (btns[1]) btns[1].disabled = i === items.length - 1;
   });
   // update subsection badge
 
